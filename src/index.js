@@ -1,13 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "./index.css";
-import App from "./App";
-import reportWebVitals from "./reportWebVitals";
+
+import AppV2Jonas from "./module13/App-V2-Jonas";
+import "./module13/index.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
 	<React.StrictMode>
-		<App />
+		{/* <App /> */}
+		{/* <AppV1 /> */}
+		<AppV2Jonas />
 	</React.StrictMode>
 );
 
