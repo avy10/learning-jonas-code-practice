@@ -2,14 +2,25 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 
 import AppV2Jonas from "./module13/App-V2-Jonas";
-import "./module13/index.css";
+// import "./module13/index.css";
+
+import App from "./module14ClassyWeather/App";
+import "./module14ClassyWeather/style.css";
+import TempApp from "./module14ClassyWeather/TempApp";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
 	<React.StrictMode>
 		{/* <App /> */}
 		{/* <AppV1 /> */}
-		<AppV2Jonas />
+		{/* <AppV2Jonas /> */}
+		{/* module 14 */}
+		<App />
+
+		{/* <TempApp /> */}
+		{/* module 16 useReducer START*/}
+		{/* react-quiz-app */}
+		{/* module 16 useReducer END*/}
 	</React.StrictMode>
 );
 

@@ -1,5 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import StarRating from "../StarRating";
+import { useMovies } from "./customHooks/useMovies";
+import { useLocalStorageState } from "./customHooks/useLocalStorageState";
+import { useKey } from "./customHooks/useKey";
 
 const average = (arr) =>
 	arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
@@ -8,19 +11,25 @@ const KEY = "f84fc31d";
 
 export default function AppV2Jonas() {
 	const [query, setQuery] = useState("");
-	const [movies, setMovies] = useState([]);
-	const [isLoading, setIsLoading] = useState(false);
-	const [error, setError] = useState("");
+	const moviesData = useMovies(query, handleCloseMovie);
+	const { movies, isLoading, error } = moviesData;
 	const [selectedId, setSelectedId] = useState(null);
 
 	// const [watched, setWatched] = useState([]);
-	const [watched, setWatched] = useState(function () {
-		// this callback function that is used to set initial state must be a pure
-		// and it must not receive any arguments
-		const watchFromLS = JSON.parse(localStorage.getItem("watched"));
-		return watchFromLS;
+	// const [watched, setWatched] = useState(function () {
+	// 	// this callback function that is used to set initial state must be a pure
+	// 	// and it must not receive any arguments
+	// 	const watchFromLS = JSON.parse(localStorage.getItem("watched"));
+	// 	return watchFromLS ? watchFromLS : [];
+	// });
+	const a = "FULLNAME : Abhishek Kumar";
+	const [watched, setWatched] = useLocalStorageState([], "watched");
+	const [avy, setAvy] = useLocalStorageState("Abhishek", "avy");
+	useEffect(() => {
+		setTimeout(() => {
+			localStorage.setItem("avy", JSON.stringify("Abhishek Kumar KR"));
+		}, 1500);
 	});
-
 	/*
     useEffect(function () {
     console.log("After initial render");
@@ -61,72 +70,19 @@ export default function AppV2Jonas() {
 		// );
 	}
 
-	useEffect(() => {
-		localStorage.setItem("watched", JSON.stringify(watched));
-		// to get the watched array back from localStorage we can use an effect which runs on component mount
-		// but there is a better way to do that and that is to initialise state with a callback function i.e. lazy state
-	}, [watched]);
 	// useEffect(() => {
 	// 	const watchFromLS = JSON.parse(localStorage.getItem("watched"));
 	// 	setWatched(watchFromLS);
 	// 	console.log(watchFromLS);
 	// }, []);
-	useEffect(
-		function () {
-			const controller = new AbortController();
-
-			async function fetchMovies() {
-				try {
-					setIsLoading(true);
-					setError("");
-
-					const res = await fetch(
-						`http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
-						{ signal: controller.signal }
-					);
-
-					if (!res.ok)
-						throw new Error(
-							"Something went wrong with fetching movies"
-						);
-
-					const data = await res.json();
-					if (data.Response === "False")
-						throw new Error("Movie not found");
-
-					setMovies(data.Search);
-					setError("");
-				} catch (err) {
-					if (err.name !== "AbortError") {
-						console.log(err.message);
-						setError(err.message);
-					}
-				} finally {
-					setIsLoading(false);
-				}
-			}
-
-			if (query.length < 3) {
-				setMovies([]);
-				setError("");
-				return;
-			}
-
-			handleCloseMovie();
-			fetchMovies();
-
-			return function () {
-				controller.abort();
-			};
-		},
-		[query]
-	);
 
 	return (
 		<>
 			<NavBar>
 				<Search query={query} setQuery={setQuery} />
 				<NumResults movies={movies} />
+				<p>My name is {avy}</p>
+				<p>{a}</p>
 			</NavBar>
 
 			<Main>
@@ -196,11 +152,32 @@ function Logo() {
 }
 
 function Search({ query, setQuery }) {
-	useEffect(() => {
-		const inputBoxElement = document.querySelector(".search");
-		console.log(inputBoxElement);
-		inputBoxElement.focus();
-	}, []);
+	// useEffect(() => {
+	// 	const inputBoxElement = document.querySelector(".search");
+	// 	console.log(inputBoxElement);
+	// 	inputBoxElement.focus();
+	// }, []);
+	const inputBoxRef = useRef(null);
+	// usually in case of a DOM element we use null as initial data,
+	// because DOM elements can only be selected after they have been **painted** on the browser
+	useKey("Enter", function () {
+		if (document.activeElement === inputBoxRef.current) return;
+		inputBoxRef.current.focus();
+		setQuery("");
+	});
+	// useEffect(() => {
+	// 	// inputBoxRef.current.focus();
+	// 	function callback(e) {
+	// 		if (document.activeElement === inputBoxRef.current) return;
+	// 		console.log("I AM RUNNING");
+	// 		if (e.code === "Enter") {
+	// 			inputBoxRef.current.focus();
+	// 			setQuery("");
+	// 		}
+	// 	}
+	// 	document.addEventListener("keydown", callback);
+	// 	return () => document.removeEventListener("keydown", callback);
+	// }, [setQuery]);
 	return (
 		<input
 			className="search"
@@ -208,6 +185,7 @@ function Search({ query, setQuery }) {
 			placeholder="Search movies..."
 			value={query}
 			onChange={(e) => setQuery(e.target.value)}
+			ref={inputBoxRef}
 		/>
 	);
 }
@@ -300,6 +278,13 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
 	const [isLoading, setIsLoading] = useState(false);
 	const [userRating, setUserRating] = useState("");
 
+	const countRef = useRef(0);
+	useEffect(() => {
+		if (userRating) {
+			countRef.current += 1;
+		}
+		console.log(countRef.current);
+	}, [userRating]);
 	const isWatched = watched.map((movie) => movie.imdbID).includes(selectedId);
 	const watchedUserRating = watched.find(
 		(movie) => movie.imdbID === selectedId
@@ -327,28 +312,14 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
 			imdbRating: Number(imdbRating),
 			runtime: Number(runtime.split(" ").at(0)),
 			userRating,
+			countRatingDecisions: countRef.current,
 		};
 
 		onAddWatched(newWatchedMovie);
 		onCloseMovie();
 	}
 
-	useEffect(
-		function () {
-			function callback(e) {
-				if (e.code === "Escape") {
-					onCloseMovie();
-				}
-			}
-
-			document.addEventListener("keydown", callback);
-
-			return function () {
-				document.removeEventListener("keydown", callback);
-			};
-		},
-		[onCloseMovie]
-	);
+	useKey("Escape", onCloseMovie);
 
 	useEffect(
 		function () {
@@ -443,7 +414,9 @@ function WatchedSummary({ watched }) {
 	const avgImdbRating = average(watched.map((movie) => movie.imdbRating));
 	const avgUserRating = average(watched.map((movie) => movie.userRating));
 	const avgRuntime = average(watched.map((movie) => movie.runtime));
-
+	// const avgUserRating = 8.655;
+	// const avgImdbRating = 7.658;
+	// const avgRuntime = 120;
 	return (
 		<div className="summary">
 			<h2>Movies you watched</h2>
